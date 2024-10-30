@@ -3,7 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const Product = require('../src/models/Product')
+const Product = require('../src/models/Product');
+const fs = require('fs');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -31,18 +32,11 @@ app.post('/crawl', async (req, res) => {
         }
         let price;
         if (source === 'Amazon') {
-            price = $('span#priceblock_ourprice').text().trim() || 
-                    $('span#priceblock_dealprice').text().trim() || 
-                    $('span.a-price span.a-offscreen').text().trim();
+            price = $('span.a-price span.a-offscreen').first().text().trim();
         } else if (source === 'eBay') {
-            price = $('span.x-price-primary').text().trim() || 
-                    $('span#prcIsum').text().trim() || 
-                    $('span#prcIsum .x-price-approx').text().trim();
-                   
+            price = $('.x-price-primary').text().trim();
+          
         }
-        console.log($('span.x-price-primary').text())
-        console.log($('span#prcIsum').text())
-        console.log($('span#prcIsum .x-price-approx').text())
 
         // Create a new product instance
         const product = new Product({ name, price, source, url });
