@@ -3,44 +3,38 @@ const cheerio = require('cheerio');
 const Product = require('../models/Product');
 
 const scrapeProduct = async (req, res) => {
-    const { url } = req.body;
-
+    const { url } = req.body; // Get the URL from the request body
     try {
-        // Fetch the HTML of the product page
-        const { data } = await axios.get(url);
-        const $ = cheerio.load(data);
+        const response = await axios.get(url); // Fetch the page content
+        const $ = cheerio.load(response.data); // Load the HTML into Cheerio
 
-        // Scrape the required details (selectors may need adjustment based on the website)
-        const name = $('span#productTitle').text().trim() || $('h1.item-title').text().trim();
-        // Clean up the scraped data
-        // Clean up the scraped data
-        const Cleanedname = name
-            .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-            .replace(/^\s+|\s+$/g, '') // Trim leading and trailing spaces
-            .replace(/\u00A0/g, ' ') // Replace non-breaking spaces (U+00A0)
-            .replace(/[\u2018\u2019]/g, "'") // Replace smart quotes with regular quotes
-            .replace(/[^ -~]+/g, ''); // Remove non-printable characters
-        const price = $('#priceblock_ourprice').text().trim() || $('span#prcIsum').text().trim();
-        const source = url.includes('amazon') ? 'Amazon' : 'eBay';
+        // Extract the product details (adjust selectors as needed)
+        const name = $('h1 span').text() || $('span#productTitle').text().trim(); // Update this as needed
 
-        if (!name || !price) {
-            return res.status(400).json({ message: 'Unable to retrieve product details.' });
+        let source;
+        if (url.includes('ebay.com')) {
+            source = 'eBay';
+        } else if (url.includes('amazon.com')) {
+            source = 'Amazon';
+        } else {
+            source = 'Unknown'; // Default source if it's not recognized
         }
 
-        // Create a new product document
-        const product = new Product({
-            name: Cleanedname,
-            price,
-            source,
-            url
-        });
+        let price;
+        if (source === 'Amazon') {
+            price = $('span.a-price span.a-offscreen').first().text().trim();
+        } else if (source === 'eBay') {
+            price = $('.x-price-primary').text().trim();
+        }
 
-        // Save the product to MongoDB
+        // Create a new product instance
+        const product = new Product({ name: name.trim(), price, source, url }); // Trim the name here
+        // Save it to the database
         await product.save();
-        res.status(201).json(product);
+        res.status(201).json({ message: 'Product saved', product });
     } catch (error) {
-        console.error('Error scraping product:', error);
-        res.status(500).json({ message: 'Failed to scrape product.' });
+        console.error('Error scraping data:', error);
+        res.status(500).json({ message: 'Error scraping data', error });
     }
 };
 
