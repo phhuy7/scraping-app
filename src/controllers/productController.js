@@ -9,7 +9,7 @@ const scrapeProduct = async (req, res) => {
         const $ = cheerio.load(response.data); // Load the HTML into Cheerio
 
         // Extract the product details (adjust selectors as needed)
-        const name = $('h1 span').text() || $('span#productTitle').text().trim(); // Update this as needed
+        const name = $('h1 span').text().trim() || $('span#productTitle').text().trim(); // Updated to trim
 
         let source;
         if (url.includes('ebay.com')) {
@@ -17,7 +17,7 @@ const scrapeProduct = async (req, res) => {
         } else if (url.includes('amazon.com')) {
             source = 'Amazon';
         } else {
-            source = 'Unknown'; // Default source if it's not recognized
+            source = 'Unknown';
         }
 
         let price;
@@ -27,8 +27,23 @@ const scrapeProduct = async (req, res) => {
             price = $('.x-price-primary').text().trim();
         }
 
+        // Check for missing product details
+        if (!name) {
+            return res.status(400).json({ message: 'Product name is missing.' });
+        }
+        if (!price) {
+            return res.status(400).json({ message: 'Product price is missing.' });
+        }
+
         // Create a new product instance
-        const product = new Product({ name: name.trim(), price, source, url }); // Trim the name here
+        const product = new Product({
+            name,
+            price,
+            source,
+            url,
+            dateCollected: new Date() // Automatically set dateCollected to the current date/time
+        });
+
         // Save it to the database
         await product.save();
         res.status(201).json({ message: 'Product saved', product });
