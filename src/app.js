@@ -29,6 +29,7 @@ app.post('/crawl', async (req, res) => {
         const $ = cheerio.load(response.data); // Load the HTML into Cheerio
         // Extract the product details (adjust selectors as needed)
         const name = $('h1 span').text(); // Example selector for the product name
+        console.log(name)
         if (url.includes('ebay.com')) {
             source = 'eBay';
         } else if (url.includes('amazon.com')) {
