@@ -2,13 +2,19 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const axios = require('axios');
+const cors = require('cors');
 const cheerio = require('cheerio');
 const Product = require('../src/models/Product');
 const fs = require('fs');
 require('dotenv').config(); // Load environment variables
 
+
+
 const app = express();
-app.use(express.json()); // Middleware to parse JSON requests
+app.use(cors());
+
+// Middleware to parse JSON requests
+app.use(express.json());
 
 // Define a simple route to test the server
 app.get('/', (req, res) => {
@@ -40,8 +46,8 @@ app.post('/crawl', async (req, res) => {
 
         // Create a new product instance
         const product = new Product({ name, price, source, url });
-        await product.save(); // Save the product to the database
-
+        // Save it to the database
+        await product.save();
         res.status(201).json({ message: 'Product saved', product });
     } catch (error) {
         console.error('Error scraping data:', error);
